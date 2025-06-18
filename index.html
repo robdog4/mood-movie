@@ -97,7 +97,7 @@
 
   <script>
     const API_BASE = 'https://relaxed-duckanoo-214cf7.netlify.app/.netlify/functions/movies';
-    const TMDB_SEARCH_PERSON = 'https://api.themoviedb.org/3/search/person?api_key=YOUR_TMDB_API_KEY&query=';
+    const TMDB_SEARCH_PERSON = 'https://api.themoviedb.org/3/search/person?api_key=db58f0afb200ab84a4bf18c43e13ffb1&query=';
 
     const yearSelect = document.getElementById("yearSelect");
     const yearType = document.getElementById("yearType");
@@ -178,7 +178,7 @@
         while (resultsDiv.children.length > 1) resultsDiv.removeChild(resultsDiv.lastChild);
 
         for (const movie of movies) {
-          const videoRes = await fetch(`https://api.themoviedb.org/3/movie/${movie.id}/videos?api_key=YOUR_TMDB_API_KEY`);
+          const videoRes = await fetch(`https://api.themoviedb.org/3/movie/${movie.id}/videos?api_key=db58f0afb200ab84a4bf18c43e13ffb1`);
           const videoData = await videoRes.json();
           const trailer = videoData.results.find(
             v => v.type === "Trailer" && v.site === "YouTube" && v.name.toLowerCase().includes("official")
