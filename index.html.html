@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Mood-Based Movie Finder with TMDb</title>
+  <style>
+    body {
+      background: #1b1b2f;
+      color: white;
+      font-family: sans-serif;
+      text-align: center;
+      padding: 30px;
+    }
+    input, button {
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 6px;
+      border: none;
+      margin: 10px;
+    }
+    button {
+      background: #f39c12;
+      color: white;
+      cursor: pointer;
+    }
+    .movie {
+      display: inline-block;
+      width: 150px;
+      margin: 15px;
+    }
+    img {
+      width: 100%;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎬 Mood-Based Movie Finder</h1>
+  <input id="moodInput" placeholder="e.g., happy, sad, adventurous" />
+  <button onclick="findMovies()">Find Movies</button>
+
+  <div id="results"></div>
+
+  <script>
+    const API_KEY = 'https://robdog4.github.io/mood-movie/';
+    const moodToGenre = {
+      happy: 35,         // Comedy
+      sad: 18,           // Drama
+      adventurous: 12,   // Adventure
+      romantic: 10749,   // Romance
+      angry: 28,         // Action
+      bored: 878         // Sci-Fi
+    };
+
+    async function findMovies() {
+      const mood = document.getElementById('moodInput').value.toLowerCase().trim();
+      const genreId = moodToGenre[mood];
+
+      const resultsDiv = document.getElementById('results');
+      resultsDiv.innerHTML = '';
+
+      if (!genreId) {
+        resultsDiv.innerHTML = `<p>No genre found for mood "${mood}". Try happy, sad, adventurous, etc.</p>`;
+        return;
+      }
+
+      const url = `https://api.themoviedb.org/3/discover/movie?api_key=${API_KEY}&with_genres=${genreId}&sort_by=popularity.desc`;
+
+      try {
+        const res = await fetch(url);
+        const data = await res.json();
+        const movies = data.results.slice(0, 10); // show top 10
+
+        resultsDiv.innerHTML = `<h2>Top Movies for "${mood}"</h2>`;
+        movies.forEach(movie => {
+          const poster = movie.poster_path 
+            ? `https://image.tmdb.org/t/p/w200${movie.poster_path}` 
+            : 'https://via.placeholder.com/200x300?text=No+Image';
+          resultsDiv.innerHTML += `
+            <div class="movie">
+              <img src="${poster}" alt="${movie.title}">
+              <p>${movie.title}</p>
+            </div>
+          `;
+        });
+      } catch (err) {
+        resultsDiv.innerHTML = `<p>Error fetching movies. Please try again.</p>`;
+        console.error(err);
+      }
+    }
+  </script>
+</body>
+</html>
