@@ -89,5 +89,30 @@
       }
     }
   </script>
+  <script>
+  const moodToMovies = {
+    happy: ["La La Land", "Paddington 2", "The Secret Life of Walter Mitty"],
+    sad: ["The Pursuit of Happyness", "Inside Out", "Up"],
+    adventurous: ["Indiana Jones", "National Treasure", "Jumanji"],
+    romantic: ["The Notebook", "Before Sunrise", "Pride and Prejudice"],
+    angry: ["John Wick", "Gladiator", "Kill Bill"],
+    bored: ["Inception", "The Matrix", "Scott Pilgrim vs. the World"]
+  };
+
+  function findMovies() {
+    const mood = document.getElementById("moodInput").value.toLowerCase().trim();
+    const movies = moodToMovies[mood];
+
+    const resultsDiv = document.getElementById("results");
+    resultsDiv.innerHTML = "";
+
+    if (movies) {
+      resultsDiv.innerHTML = `<h2>Recommended for "${mood}" mood</h2><ul>` +
+        movies.map(movie => `<li>${movie}</li>`).join("") + "</ul>";
+    } else {
+      resultsDiv.innerHTML = `<p>No results found for that mood. Try happy, sad, adventurous, etc.</p>`;
+    }
+  }
+</script>
 </body>
 </html>
