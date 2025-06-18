@@ -5,94 +5,206 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Mood-Based Movie Finder</title>
   <style>
-    body {
-      background-color: #1b1b2f;
-      color: white;
-      font-family: Arial, sans-serif;
-      text-align: center;
-      padding: 30px;
-    }
-
-    input, button {
-      padding: 10px;
-      font-size: 16px;
-      border-radius: 6px;
-      border: none;
-      margin: 10px;
-    }
-
-    button {
-      background-color: #f39c12;
-      color: white;
-      cursor: pointer;
-    }
-
-    .movie {
-      display: inline-block;
-      width: 150px;
-      margin: 15px;
-    }
-
-    img {
+    body { background: #1b1b2f; color: white; font-family: Arial, sans-serif; text-align: center; padding: 30px; }
+    input, select, button { padding: 10px; font-size: 16px; border-radius: 6px; border: none; margin: 10px; }
+    button { background-color: #f39c12; color: white; cursor: pointer; }
+    .movie { display: inline-block; width: 300px; margin: 15px; vertical-align: top; position: relative; }
+    img { width: 100%; border-radius: 8px; cursor: pointer; }
+    iframe { width: 100%; height: 200px; border: none; border-radius: 8px; margin-top: 10px; }
+    #results { margin-top: 30px; display: flex; flex-wrap: wrap; justify-content: center; }
+    footer { margin-top: 50px; font-size: 0.9em; color: #aaa; }
+    a { color: #f39c12; }
+    .genre-group { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; max-width: 600px; margin: 0 auto; }
+    .genre-group label { font-size: 14px; }
+    #trailerModal {
+      display: none;
+      position: fixed;
+      z-index: 999;
+      left: 0;
+      top: 0;
       width: 100%;
-      border-radius: 8px;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      align-items: center;
+      justify-content: center;
     }
-
-    #results {
-      margin-top: 30px;
+    #trailerModal iframe {
+      width: 80%;
+      height: 60vh;
     }
-
-    footer {
-      margin-top: 50px;
-      font-size: 0.9em;
-      color: #aaa;
-    }
-
-    a {
-      color: #f39c12;
+    #trailerModal .close {
+      position: absolute;
+      top: 20px;
+      right: 30px;
+      color: white;
+      font-size: 30px;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
 
   <h1>🎬 Mood-Based Movie Finder</h1>
-  <input id="moodInput" placeholder="e.g., happy, sad, adventurous" />
+
+  <input id="moodInput" placeholder="Mood (e.g., happy, sad)" />
+
+  <select id="yearType">
+    <option value="single">Single Year</option>
+    <option value="range">10-Year Range</option>
+  </select>
+
+  <select id="yearSelect"></select>
+
+  <select id="sortBy">
+    <option value="popularity.desc">Popularity</option>
+    <option value="vote_average.desc">Rating</option>
+    <option value="release_date.desc">Newest</option>
+  </select>
+
+  <select id="language">
+    <option value="">Any Language</option>
+    <option value="en">English</option>
+    <option value="es">Spanish</option>
+    <option value="fr">French</option>
+    <option value="ja">Japanese</option>
+    <option value="hi">Hindi</option>
+  </select>
+
+  <input id="actorInput" placeholder="Actor (optional)" />
+
+  <div class="genre-group">
+    <label><input type="checkbox" class="genre" value="28"> Action</label>
+    <label><input type="checkbox" class="genre" value="35"> Comedy</label>
+    <label><input type="checkbox" class="genre" value="18"> Drama</label>
+    <label><input type="checkbox" class="genre" value="10749"> Romance</label>
+    <label><input type="checkbox" class="genre" value="878"> Sci-Fi</label>
+    <label><input type="checkbox" class="genre" value="27"> Horror</label>
+    <label><input type="checkbox" class="genre" value="12"> Adventure</label>
+  </div>
+
   <button onclick="findMovies()">Find Movies</button>
 
   <div id="results"></div>
+
+  <div id="trailerModal" onclick="closeTrailer()">
+    <div class="close">&times;</div>
+    <iframe id="trailerFrame" allowfullscreen></iframe>
+  </div>
 
   <footer>
     This product uses the <a href="https://www.themoviedb.org/" target="_blank">TMDb API</a> but is not endorsed or certified by TMDb.
   </footer>
 
   <script>
-    const API_ENDPOINT = 'https://relaxed-duckanoo-214cf7.netlify.app/.netlify/functions/movies';
+    const API_BASE = 'https://relaxed-duckanoo-214cf7.netlify.app/.netlify/functions/movies';
+    const TMDB_SEARCH_PERSON = 'https://api.themoviedb.org/3/search/person?api_key=YOUR_TMDB_API_KEY&query=';
+
+    const yearSelect = document.getElementById("yearSelect");
+    const yearType = document.getElementById("yearType");
+
+    yearType.addEventListener("change", populateYearOptions);
+    populateYearOptions();
+
+    function populateYearOptions() {
+      const currentYear = new Date().getFullYear();
+      yearSelect.innerHTML = "";
+
+      if (yearType.value === "single") {
+        for (let y = currentYear; y >= 1980; y--) {
+          const option = document.createElement("option");
+          option.value = y;
+          option.text = y;
+          yearSelect.appendChild(option);
+        }
+      } else {
+        for (let y = currentYear - 9; y >= 1980; y -= 10) {
+          const option = document.createElement("option");
+          option.value = `${y}-${y + 9}`;
+          option.text = `${y} - ${y + 9}`;
+          yearSelect.appendChild(option);
+        }
+      }
+    }
 
     async function findMovies() {
       const mood = document.getElementById("moodInput").value.trim().toLowerCase();
+      const yearMode = yearType.value;
+      const yearValue = yearSelect.value;
+      const sortBy = document.getElementById("sortBy").value;
+      const language = document.getElementById("language").value;
+      const actor = document.getElementById("actorInput").value.trim();
+      const genreCheckboxes = document.querySelectorAll('.genre:checked');
+
       const resultsDiv = document.getElementById("results");
       resultsDiv.innerHTML = "Loading...";
 
+      let personId = null;
+      if (actor) {
+        const personRes = await fetch(TMDB_SEARCH_PERSON + encodeURIComponent(actor));
+        const personData = await personRes.json();
+        if (personData.results && personData.results[0]) {
+          personId = personData.results[0].id;
+        }
+      }
+
+      let query = `${API_BASE}?mood=${mood}&sort_by=${sortBy}`;
+      if (language) query += `&language=${language}`;
+      if (personId) query += `&with_cast=${personId}`;
+
+      if (yearMode === "single") {
+        query += `&primary_release_year=${yearValue}`;
+      } else {
+        const [start, end] = yearValue.split("-");
+        query += `&primary_release_date.gte=${start}-01-01&primary_release_date.lte=${end}-12-31`;
+      }
+
+      const selectedGenres = Array.from(genreCheckboxes).map(cb => cb.value);
+      if (selectedGenres.length > 0) {
+        query += `&with_genres=${selectedGenres.join(',')}`;
+      }
+
       try {
-        const res = await fetch(`${API_ENDPOINT}?mood=${mood}`);
+        const res = await fetch(query);
         const movies = await res.json();
 
         if (!movies.length) {
-          resultsDiv.innerHTML = "<p>No movies found for this mood.</p>";
+          resultsDiv.innerHTML = "<p>No movies found.</p>";
           return;
         }
 
-        resultsDiv.innerHTML = `<h2>Top Movies for "${mood}"</h2>` +
-          movies.map(movie => `
+        resultsDiv.innerHTML = `<h2>Results</h2>`;
+
+        for (const movie of movies) {
+          const searchTerm = encodeURIComponent(`${movie.title} official trailer`);
+          const thumbnailUrl = `https://img.youtube.com/vi?search_query=${searchTerm}/0.jpg`;
+          const videoUrl = `https://www.youtube.com/embed?listType=search&list=${searchTerm}`;
+
+          const movieHtml = `
             <div class="movie">
-              <img src="https://image.tmdb.org/t/p/w200${movie.poster_path}" alt="${movie.title}" />
+              <img src="https://image.tmdb.org/t/p/w200${movie.poster_path}" alt="${movie.title}" onclick="showTrailer('${videoUrl}')" />
               <p>${movie.title}</p>
-            </div>
-          `).join("");
-      } catch (error) {
-        console.error(error);
-        resultsDiv.innerHTML = "<p>Error fetching movies. Please try again later.</p>";
+            </div>`;
+
+          resultsDiv.innerHTML += movieHtml;
+        }
+      } catch (err) {
+        console.error(err);
+        resultsDiv.innerHTML = "<p>Error fetching movies. Try again later.</p>";
       }
+    }
+
+    function showTrailer(url) {
+      const modal = document.getElementById("trailerModal");
+      const frame = document.getElementById("trailerFrame");
+      frame.src = url;
+      modal.style.display = "flex";
+    }
+
+    function closeTrailer() {
+      const modal = document.getElementById("trailerModal");
+      const frame = document.getElementById("trailerFrame");
+      frame.src = "";
+      modal.style.display = "none";
     }
   </script>
 </body>
