@@ -175,6 +175,7 @@
         }
 
         resultsDiv.innerHTML = `<h2>Results</h2>`;
+        while (resultsDiv.children.length > 1) resultsDiv.removeChild(resultsDiv.lastChild);
 
         for (const movie of movies) {
           const searchTerm = encodeURIComponent(`${movie.title} official trailer`);
@@ -187,6 +188,7 @@
             </div>`;
 
           resultsDiv.innerHTML += movieHtml;
+        resultsDiv.scrollIntoView({ behavior: 'smooth' });
         }
       } catch (err) {
         console.error(err);
@@ -210,3 +212,4 @@
   </script>
 </body>
 </html>
+
